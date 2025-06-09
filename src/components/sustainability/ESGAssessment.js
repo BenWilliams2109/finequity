@@ -1,13 +1,13 @@
-// src/components/sustainability/ESGAssessment.js
+// src/components/sustainability/ESGAssessment.js - Mobile-optimized version
 'use client';
 
 import { useState } from 'react';
-import { LeafIcon, UsersIcon, BuildingOfficeIcon, StarIcon } from '@heroicons/react/24/outline';
 
 const ESGAssessment = ({ esgData, businessInfo }) => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeSection, setActiveSection] = useState('overview');
+  const [expandedRecommendation, setExpandedRecommendation] = useState(null);
 
-  // Default ESG data if none provided
+  // Enhanced ESG data with better mobile presentation
   const defaultESGData = {
     overall: businessInfo?.industry === 'Food' ? 78 : 
              businessInfo?.industry === 'Crafts' ? 82 : 75,
@@ -17,370 +17,359 @@ const ESGAssessment = ({ esgData, businessInfo }) => {
       social: businessInfo?.communityReferences ? 90 : 80,
       governance: businessInfo?.hasVisaMerchant ? 80 : 70
     },
-    recommendations: [
+    quickWins: [
       {
-        category: "Environmental",
-        suggestion: "Implement waste reduction practices",
-        impact: "Reduce costs by 10-15%",
-        creditBenefit: "+5 credit points"
+        title: "Set up recycling program",
+        impact: "Environmental +15 pts",
+        effort: "Low",
+        timeframe: "1 week",
+        category: "environmental"
       },
       {
-        category: "Social", 
-        suggestion: "Document community involvement",
-        impact: "Strengthen local relationships",
-        creditBenefit: "+8 credit points"
+        title: "Document community partnerships",
+        impact: "Social +12 pts",
+        effort: "Low", 
+        timeframe: "2 days",
+        category: "social"
       },
       {
-        category: "Governance",
-        suggestion: "Formalize business processes",
-        impact: "Improve operational efficiency",
-        creditBenefit: "+12 credit points"
+        title: "Create business policy handbook",
+        impact: "Governance +18 pts",
+        effort: "Medium",
+        timeframe: "2 weeks",
+        category: "governance"
       }
+    ],
+    certifications: [
+      { name: "Fair Trade", available: true, points: 25 },
+      { name: "Women-Owned Business", available: true, points: 20 },
+      { name: "Local Sustainability", available: false, points: 15 }
     ]
   };
 
-  const data = esgData || defaultESGData;
+  const data = { ...defaultESGData, ...(esgData || {}) };
+  const overallGrade = data.overall >= 80 ? 'A' : data.overall >= 70 ? 'B' : data.overall >= 60 ? 'C' : 'D';
+  const gradeColor = data.overall >= 80 ? 'text-green-600' : data.overall >= 70 ? 'text-blue-600' : data.overall >= 60 ? 'text-yellow-600' : 'text-red-600';
 
-  const ScoreGauge = ({ score, label, color = 'blue' }) => {
+  const ScoreCircle = ({ score, label, color, size = 'md' }) => {
+    const sizeClasses = {
+      sm: 'w-16 h-16',
+      md: 'w-20 h-20',
+      lg: 'w-24 h-24'
+    };
+    
     const colorClasses = {
-      green: 'text-green-500',
-      blue: 'text-blue-500', 
-      purple: 'text-purple-500'
+      green: 'text-green-500 bg-green-50',
+      blue: 'text-blue-500 bg-blue-50',
+      purple: 'text-purple-500 bg-purple-50'
     };
 
     return (
       <div className="text-center">
-        <div className="relative w-20 h-20 mx-auto mb-2">
-          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="35"
-              stroke="currentColor"
-              strokeWidth="6"
-              fill="transparent"
-              className="text-gray-200"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="35"
-              stroke="currentColor"
-              strokeWidth="6"
-              fill="transparent"
-              strokeDasharray={`${(score / 100) * 220} 220`}
-              className={colorClasses[color]}
-              strokeLinecap="round"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-lg font-bold ${colorClasses[color]}`}>{score}</span>
+        <div className={`relative ${sizeClasses[size]} mx-auto mb-2 ${colorClasses[color]} rounded-full flex items-center justify-center`}>
+          <div className="text-center">
+            <div className={`text-lg font-bold ${colorClasses[color].split(' ')[0]}`}>{score}</div>
+            <div className="text-xs text-gray-500">/100</div>
           </div>
         </div>
-        <div className="text-sm font-medium text-gray-700">{label}</div>
+        <div className="text-xs font-medium text-gray-700">{label}</div>
       </div>
     );
   };
 
-  const OverviewTab = () => (
-    <div className="space-y-6">
-      {/* Overall Score */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <div className="text-center mb-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">ESG Score</h3>
-          <div className="relative w-28 h-28 mx-auto mb-4">
-            <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="transparent"
-                className="text-gray-200"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="transparent"
-                strokeDasharray={`${(data.overall / 100) * 251} 251`}
-                className="text-green-500"
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{data.overall}</div>
-                <div className="text-xs text-gray-500">/100</div>
-              </div>
-            </div>
-          </div>
-          <p className="text-gray-600">
-            {data.overall >= 80 ? 'Excellent' : 
-             data.overall >= 70 ? 'Good' : 
-             data.overall >= 60 ? 'Fair' : 'Needs Improvement'} Performance
-          </p>
-        </div>
-
-        {/* Category Breakdown */}
-        <div className="grid grid-cols-3 gap-4">
-          <ScoreGauge 
-            score={data.breakdown.environmental} 
-            label="Environmental" 
-            color="green" 
-          />
-          <ScoreGauge 
-            score={data.breakdown.social} 
-            label="Social" 
-            color="blue" 
-          />
-          <ScoreGauge 
-            score={data.breakdown.governance} 
-            label="Governance" 
-            color="purple" 
-          />
-        </div>
+  const QuickWinCard = ({ win, index }) => (
+    <div className="bg-white rounded-lg p-3 border border-gray-200 hover:shadow-sm transition-shadow">
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="font-medium text-gray-900 text-sm flex-1">{win.title}</h4>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          win.effort === 'Low' ? 'bg-green-100 text-green-700' :
+          win.effort === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-red-100 text-red-700'
+        }`}>
+          {win.effort}
+        </span>
       </div>
-
-      {/* Credit Benefits */}
-      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-        <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <StarIcon className="w-5 h-5 mr-2 text-yellow-500" />
-          ESG Credit Benefits
-        </h4>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 bg-white rounded-lg">
-            <div className="text-xl font-bold text-green-600">+{Math.round(data.overall * 0.3)}</div>
-            <div className="text-xs text-gray-600">Credit Points</div>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg">
-            <div className="text-xl font-bold text-blue-600">-1.5%</div>
-            <div className="text-xs text-gray-600">Interest Rate</div>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg">
-            <div className="text-xl font-bold text-purple-600">+25%</div>
-            <div className="text-xs text-gray-600">Loan Amount</div>
-          </div>
-        </div>
+      
+      <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+        <span>⏱️ {win.timeframe}</span>
+        <span className="font-medium text-blue-600">{win.impact}</span>
       </div>
-    </div>
-  );
-
-  const EnvironmentalTab = () => (
-    <div className="bg-white rounded-lg p-4 border border-gray-200">
-      <div className="flex items-center mb-4">
-        <LeafIcon className="w-6 h-6 text-green-600 mr-3" />
-        <h3 className="text-lg font-semibold text-gray-800">Environmental Impact</h3>
-        <div className="ml-auto">
-          <span className="text-xl font-bold text-green-600">{data.breakdown.environmental}</span>
-          <span className="text-gray-500">/100</span>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {[
-          { practice: "Waste Reduction", score: businessInfo?.industry === 'Food' ? 85 : 70 },
-          { practice: "Energy Efficiency", score: 65 },
-          { practice: "Sustainable Sourcing", score: businessInfo?.industry === 'Crafts' ? 90 : 60 },
-          { practice: "Water Conservation", score: 55 }
-        ].map((item, index) => (
-          <div key={index} className="p-3 bg-green-50 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <h4 className="font-medium text-gray-800">{item.practice}</h4>
-              <span className="text-lg font-bold text-green-600">{item.score}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full"
-                style={{ width: `${item.score}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 p-3 bg-green-100 rounded-lg">
-        <h4 className="font-semibold text-green-800 mb-2">Benefits</h4>
-        <ul className="text-sm text-green-700 space-y-1">
-          <li>• Reduced operational costs</li>
-          <li>• Access to green financing</li>
-          <li>• Enhanced brand reputation</li>
-        </ul>
-      </div>
-    </div>
-  );
-
-  const SocialTab = () => (
-    <div className="bg-white rounded-lg p-4 border border-gray-200">
-      <div className="flex items-center mb-4">
-        <UsersIcon className="w-6 h-6 text-blue-600 mr-3" />
-        <h3 className="text-lg font-semibold text-gray-800">Social Impact</h3>
-        <div className="ml-auto">
-          <span className="text-xl font-bold text-blue-600">{data.breakdown.social}</span>
-          <span className="text-gray-500">/100</span>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {[
-          { 
-            area: "Women's Empowerment", 
-            score: 95,
-            highlight: true
-          },
-          { 
-            area: "Community Engagement", 
-            score: businessInfo?.communityReferences ? 85 : 65,
-            highlight: !!businessInfo?.communityReferences
-          },
-          { 
-            area: "Employee Wellbeing", 
-            score: 70
-          },
-          { 
-            area: "Local Economic Impact", 
-            score: businessInfo?.industry === 'Food' ? 90 : 75
-          }
-        ].map((item, index) => (
-          <div key={index} className={`p-3 rounded-lg ${item.highlight ? 'bg-blue-100 border border-blue-200' : 'bg-blue-50'}`}>
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center">
-                <h4 className="font-medium text-gray-800">{item.area}</h4>
-                {item.highlight && <StarIcon className="w-4 h-4 text-yellow-500 ml-2" />}
-              </div>
-              <span className="text-lg font-bold text-blue-600">{item.score}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full"
-                style={{ width: `${item.score}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="text-center p-3 bg-blue-50 rounded-lg">
-          <div className="text-xl font-bold text-blue-600">4</div>
-          <div className="text-sm text-gray-600">Jobs Created</div>
-        </div>
-        <div className="text-center p-3 bg-blue-50 rounded-lg">
-          <div className="text-xl font-bold text-blue-600">100%</div>
-          <div className="text-sm text-gray-600">Local Sourcing</div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const GovernanceTab = () => (
-    <div className="bg-white rounded-lg p-4 border border-gray-200">
-      <div className="flex items-center mb-4">
-        <BuildingOfficeIcon className="w-6 h-6 text-purple-600 mr-3" />
-        <h3 className="text-lg font-semibold text-gray-800">Governance</h3>
-        <div className="ml-auto">
-          <span className="text-xl font-bold text-purple-600">{data.breakdown.governance}</span>
-          <span className="text-gray-500">/100</span>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {[
-          { practice: "Business Registration", score: 100, status: "Complete" },
-          { practice: "Financial Transparency", score: businessInfo?.hasVisaMerchant ? 85 : 60, status: businessInfo?.hasVisaMerchant ? "Good" : "Developing" },
-          { practice: "Ethical Practices", score: 80, status: "Good" },
-          { practice: "Risk Management", score: 65, status: "Developing" }
-        ].map((item, index) => (
-          <div key={index} className="p-3 bg-purple-50 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <h4 className="font-medium text-gray-800">{item.practice}</h4>
-              <div className="text-right">
-                <span className="text-lg font-bold text-purple-600">{item.score}</span>
-                <p className="text-xs text-purple-600">{item.status}</p>
-              </div>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-purple-500 h-2 rounded-full"
-                style={{ width: `${item.score}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const RecommendationsTab = () => (
-    <div className="space-y-4">
-      {data.recommendations.map((rec, index) => (
-        <div key={index} className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="flex justify-between items-start mb-2">
-            <h4 className="font-semibold text-gray-800">{rec.category}</h4>
-            <span className="text-sm font-semibold text-green-600">{rec.creditBenefit}</span>
-          </div>
-          <p className="text-sm text-gray-600 mb-2">{rec.suggestion}</p>
-          <p className="text-sm text-blue-600 font-medium">{rec.impact}</p>
-        </div>
-      ))}
+      
+      <button className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-3 rounded text-xs font-medium transition-colors">
+        Get Started →
+      </button>
     </div>
   );
 
   return (
-    <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
+    <div className="space-y-4">
+      {/* Header with Overall Score */}
+      <div className="bg-gradient-to-r from-green-500 to-blue-500 rounded-xl p-4 text-white">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-bold">ESG Impact Score</h2>
+            <p className="text-green-100 text-sm">Environmental, Social & Governance</p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold">{data.overall}</div>
+            <div className={`text-lg font-bold ${gradeColor.replace('text-', 'text-white')}`}>Grade {overallGrade}</div>
+          </div>
+        </div>
+        
+        {/* Credit Benefits Preview */}
+        <div className="grid grid-cols-3 gap-2 bg-white/10 rounded-lg p-2">
+          <div className="text-center">
+            <div className="text-sm font-bold">+{Math.round(data.overall * 0.3)}</div>
+            <div className="text-xs opacity-90">Credit Points</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm font-bold">-1.5%</div>
+            <div className="text-xs opacity-90">Interest Rate</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm font-bold">+25%</div>
+            <div className="text-xs opacity-90">Loan Amount</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Tabs - Mobile Optimized */}
+      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
         {[
-          { id: 'overview', label: 'Overview' },
-          { id: 'environmental', label: 'Environment' },
-          { id: 'social', label: 'Social' },
-          { id: 'governance', label: 'Governance' },
-          { id: 'recommendations', label: 'Tips' }
+          { id: 'overview', label: 'Overview', icon: '📊' },
+          { id: 'actions', label: 'Quick Wins', icon: '⚡' },
+          { id: 'details', label: 'Details', icon: '📋' }
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-gray-800 shadow-sm'
-                : 'text-gray-600'
+            onClick={() => setActiveSection(tab.id)}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
+              activeSection === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            {tab.label}
+            <span>{tab.icon}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && <OverviewTab />}
-      {activeTab === 'environmental' && <EnvironmentalTab />}
-      {activeTab === 'social' && <SocialTab />}
-      {activeTab === 'governance' && <GovernanceTab />}
-      {activeTab === 'recommendations' && <RecommendationsTab />}
+      {activeSection === 'overview' && (
+        <div className="space-y-4">
+          {/* Category Breakdown */}
+          <div className="bg-white rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Score Breakdown</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <ScoreCircle 
+                score={data.breakdown.environmental} 
+                label="Environment" 
+                color="green" 
+              />
+              <ScoreCircle 
+                score={data.breakdown.social} 
+                label="Social" 
+                color="blue" 
+              />
+              <ScoreCircle 
+                score={data.breakdown.governance} 
+                label="Governance" 
+                color="purple" 
+              />
+            </div>
+          </div>
 
-      {/* Visa Partnership */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 text-white">
-        <h3 className="text-lg font-semibold mb-2">Visa Sustainability Program</h3>
-        <p className="text-sm mb-3">
-          Your ESG score qualifies for Visa's sustainability lending benefits.
-        </p>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white/20 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold">-2%</div>
-            <div className="text-xs">Interest Rate</div>
+          {/* Key Strengths */}
+          <div className="bg-white rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-3">Your Strengths</h3>
+            <div className="space-y-2">
+              {businessInfo?.industry === 'Food' && (
+                <div className="flex items-center p-2 bg-green-50 rounded-lg">
+                  <span className="text-green-600 mr-2">🌱</span>
+                  <span className="text-sm text-green-800">Strong local sourcing practices</span>
+                </div>
+              )}
+              {businessInfo?.communityReferences && (
+                <div className="flex items-center p-2 bg-blue-50 rounded-lg">
+                  <span className="text-blue-600 mr-2">🤝</span>
+                  <span className="text-sm text-blue-800">Active community engagement</span>
+                </div>
+              )}
+              {businessInfo?.hasVisaMerchant && (
+                <div className="flex items-center p-2 bg-purple-50 rounded-lg">
+                  <span className="text-purple-600 mr-2">💳</span>
+                  <span className="text-sm text-purple-800">Transparent payment processing</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="bg-white/20 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold">$50K</div>
-            <div className="text-xs">Extra Capacity</div>
-          </div>
-          <div className="bg-white/20 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold">24mo</div>
-            <div className="text-xs">Extended Terms</div>
+
+          {/* Available Certifications */}
+          <div className="bg-white rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-3">Available Certifications</h3>
+            <div className="space-y-2">
+              {(data.certifications || []).filter(cert => cert.available).map((cert, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <span className="text-yellow-500 mr-2">🏆</span>
+                    <span className="text-sm font-medium text-gray-900">{cert.name}</span>
+                  </div>
+                  <span className="text-xs font-medium text-green-600">+{cert.points} pts</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+      )}
+
+      {activeSection === 'actions' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-1">Quick Wins</h3>
+            <p className="text-sm text-gray-600 mb-4">Easy actions to boost your ESG score</p>
+            
+            <div className="space-y-3">
+              {(data.quickWins || []).map((win, index) => (
+                <QuickWinCard key={index} win={win} index={index} />
+              ))}
+            </div>
+          </div>
+
+          {/* Impact Calculator */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
+            <h3 className="font-semibold text-gray-900 mb-2">Potential Impact</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Complete all quick wins to potentially increase your score by <strong>45 points</strong>
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="bg-white p-2 rounded-lg text-center">
+                <div className="font-bold text-blue-600">+13</div>
+                <div className="text-gray-600">Credit Points</div>
+              </div>
+              <div className="bg-white p-2 rounded-lg text-center">
+                <div className="font-bold text-green-600">-0.8%</div>
+                <div className="text-gray-600">Interest Rate</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'details' && (
+        <div className="space-y-4">
+          {/* Environmental Details */}
+          <div className="bg-white rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center">
+                <span className="text-green-500 mr-2">🌿</span>
+                Environmental
+              </h3>
+              <span className="text-lg font-bold text-green-600">{data.breakdown.environmental}</span>
+            </div>
+            
+            <div className="space-y-2">
+              {[
+                { name: "Waste Management", score: businessInfo?.industry === 'Food' ? 85 : 70 },
+                { name: "Energy Use", score: 65 },
+                { name: "Sustainable Sourcing", score: businessInfo?.industry === 'Crafts' ? 90 : 60 }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{item.name}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-16 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full"
+                        style={{ width: `${item.score}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">{item.score}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Social Details */}
+          <div className="bg-white rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center">
+                <span className="text-blue-500 mr-2">👥</span>
+                Social Impact
+              </h3>
+              <span className="text-lg font-bold text-blue-600">{data.breakdown.social}</span>
+            </div>
+            
+            <div className="space-y-2">
+              {[
+                { name: "Community Engagement", score: businessInfo?.communityReferences ? 85 : 65 },
+                { name: "Job Creation", score: 80 },
+                { name: "Local Economic Impact", score: businessInfo?.industry === 'Food' ? 90 : 75 }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{item.name}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-16 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full"
+                        style={{ width: `${item.score}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">{item.score}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Governance Details */}
+          <div className="bg-white rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center">
+                <span className="text-purple-500 mr-2">🏢</span>
+                Governance
+              </h3>
+              <span className="text-lg font-bold text-purple-600">{data.breakdown.governance}</span>
+            </div>
+            
+            <div className="space-y-2">
+              {[
+                { name: "Business Registration", score: 100 },
+                { name: "Financial Transparency", score: businessInfo?.hasVisaMerchant ? 85 : 60 },
+                { name: "Risk Management", score: 65 }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{item.name}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-16 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-purple-500 h-2 rounded-full"
+                        style={{ width: `${item.score}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">{item.score}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visa Partnership CTA */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-4 text-white">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold">Visa Sustainability Program</h3>
+          <div className="bg-white/20 px-2 py-1 rounded-full">
+            <span className="text-xs font-medium">✨ Qualified</span>
+          </div>
+        </div>
+        <p className="text-blue-100 text-sm mb-3">
+          Your ESG score qualifies for enhanced sustainability lending benefits
+        </p>
+        <button className="w-full bg-white text-blue-600 py-2 px-4 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+          Learn More About Benefits
+        </button>
       </div>
     </div>
   );

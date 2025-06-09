@@ -40,13 +40,13 @@ export default function Home() {
             <div className="card hover:shadow-lg">
               <h2 className="text-xl font-bold text-primary">Alternative Credit Assessment</h2>
               <p className="mt-4 text-gray-600">
-                We look beyond traditional credit scores to assess your business's true potential.
+                {"We look beyond traditional credit scores to assess your business's true potential."}
               </p>
             </div>
             <div className="card hover:shadow-lg">
               <h2 className="text-xl font-bold text-primary">Financial Education</h2>
               <p className="mt-4 text-gray-600">
-                Learn how to improve your business's financial profile and access better loan products.
+                {"Learn how to improve your business's financial profile and access better loan products."}
               </p>
             </div>
           </div>
