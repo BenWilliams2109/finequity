@@ -1,13 +1,147 @@
-// src/app/business-profile/page.js - Enhanced with always-available alternative data
+// src/app/business-profile/page.js - Clean rewrite with input focus fix
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import FadeTransition from '../../components/ui/FadeTransition';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { useUserData } from '../../context/UserDataContext';
+
+// Move AlternativeDataSection outside to prevent re-mounting
+const AlternativeDataSection = ({ formData, handleChange, visaLookupStatus }) => (
+  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center">
+        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+          <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-semibold text-purple-800">
+          {visaLookupStatus === 'found' ? 'Boost Your Profile Even Further' : 'Alternative Data Sources'}
+        </h2>
+      </div>
+      {visaLookupStatus === 'found' && (
+        <div className="bg-purple-100 px-3 py-1 rounded-full">
+          <span className="text-xs font-medium text-purple-700">💪 Extra Strength</span>
+        </div>
+      )}
+    </div>
+    
+    <p className="text-purple-700 mb-6">
+      {visaLookupStatus === 'found' 
+        ? 'Your Visa data is excellent! Adding these data sources can make your profile even stronger and potentially unlock additional benefits.'
+        : 'Help us understand your business better by providing information about these data sources:'
+      }
+    </p>
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <Input
+        label="Mobile Money Phone Number"
+        name="mobileMoneyPhone"
+        value={formData.mobileMoneyPhone}
+        onChange={handleChange}
+        placeholder="+502 1234 5678"
+      />
+      
+      <Input
+        label="Business WhatsApp Number"
+        name="whatsappBusiness"
+        value={formData.whatsappBusiness}
+        onChange={handleChange}
+        placeholder="+502 1234 5678"
+      />
+      
+      <Input
+        label="Facebook Business Page"
+        name="facebookPage"
+        value={formData.facebookPage}
+        onChange={handleChange}
+        placeholder="facebook.com/yourbusiness"
+      />
+      
+      <Input
+        label="Instagram Business Account"
+        name="instagramAccount"
+        value={formData.instagramAccount}
+        onChange={handleChange}
+        placeholder="@yourbusiness"
+      />
+    </div>
+
+    <div className="mb-6">
+      <label className="block text-sm font-medium text-purple-700 mb-2">
+        Community References
+      </label>
+      <textarea
+        name="communityReferences"
+        value={formData.communityReferences}
+        onChange={handleChange}
+        className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        rows="3"
+        placeholder="Who can vouch for your business? (suppliers, customers, business associations...)"
+      />
+    </div>
+
+    <div className={`rounded-lg p-4 ${visaLookupStatus === 'found' ? 'bg-green-100' : 'bg-purple-100'}`}>
+      <h4 className={`font-semibold mb-3 ${visaLookupStatus === 'found' ? 'text-green-800' : 'text-purple-800'}`}>
+        {visaLookupStatus === 'found' ? 'Additional Benefits:' : 'Why This Information Helps:'}
+      </h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {visaLookupStatus === 'found' ? (
+          <>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <span className="text-sm text-green-700">Even higher credit score boost (+10-20 pts)</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <span className="text-sm text-green-700">Priority processing for loans</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <span className="text-sm text-green-700">Access to premium loan products</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <span className="text-sm text-green-700">Lower documentation requirements</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <span className="text-sm text-purple-700">Mobile money shows payment consistency</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <span className="text-sm text-purple-700">Social media demonstrates engagement</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <span className="text-sm text-purple-700">References build trust and credibility</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <span className="text-sm text-purple-700">Complete picture improves approval odds</span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+
+    {visaLookupStatus === 'found' && (
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <p className="text-sm text-blue-700">
+          💡 <strong>Pro Tip:</strong> Businesses with both Visa data and alternative data sources typically see 
+          approval rates 25% higher than those with Visa data alone.
+        </p>
+      </div>
+    )}
+  </div>
+);
 
 export default function BusinessProfile() {
   const router = useRouter();
@@ -34,6 +168,16 @@ export default function BusinessProfile() {
   const [showAlternativeData, setShowAlternativeData] = useState(false);
   const [isFormReady, setIsFormReady] = useState(false);
   
+  // Privacy and data protection states
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState({
+    dataProcessing: false,
+    visaLookup: false,
+    alternativeData: false,
+    dataSharing: false
+  });
+  const [hasGivenConsent, setHasGivenConsent] = useState(false);
+  
   const industryOptions = [
     { value: '', label: 'Select an industry' },
     { value: 'Retail', label: 'Retail' },
@@ -54,13 +198,14 @@ export default function BusinessProfile() {
     setIsFormReady(isReady);
   }, [formData.name, formData.monthlyRevenue]);
   
-  const handleChange = (e) => {
+  // Use useCallback to prevent unnecessary re-renders that cause input focus loss
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prevData => ({
+      ...prevData,
       [name]: value
-    });
-  };
+    }));
+  }, []);
 
   const handleVisaLookup = async () => {
     setVisaLookupStatus('loading');
@@ -92,16 +237,196 @@ export default function BusinessProfile() {
       }
     }, 2000);
   };
+
+  const handleShowAlternativeData = useCallback(() => {
+    setShowAlternativeData(true);
+  }, []);
   
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Check if user has given privacy consent
+    if (!hasGivenConsent) {
+      setShowPrivacyModal(true);
+      return;
+    }
+    
     updateBusinessInfo({
       ...formData,
       visaData: visaData,
-      hasVisaMerchant: visaLookupStatus === 'found'
+      hasVisaMerchant: visaLookupStatus === 'found',
+      privacyConsent: privacyConsent
     });
     router.push('/loan-options');
   };
+
+  const handlePrivacySubmit = () => {
+    // Check if required consents are given
+    if (!privacyConsent.dataProcessing) {
+      alert('Data processing consent is required to continue.');
+      return;
+    }
+    
+    setHasGivenConsent(true);
+    setShowPrivacyModal(false);
+    
+    // Now proceed with the actual form submission
+    updateBusinessInfo({
+      ...formData,
+      visaData: visaData,
+      hasVisaMerchant: visaLookupStatus === 'found',
+      privacyConsent: privacyConsent
+    });
+    router.push('/loan-options');
+  };
+
+  const handleConsentChange = (consentType) => {
+    setPrivacyConsent(prev => ({
+      ...prev,
+      [consentType]: !prev[consentType]
+    }));
+  };
+
+  // Privacy Modal Component
+  const PrivacyConsentModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl max-w-lg w-full p-6 max-h-screen overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Data Protection & Privacy</h3>
+          <button 
+            onClick={() => setShowPrivacyModal(false)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="mb-6">
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <h4 className="font-semibold text-blue-900 mb-2">🔒 Your Data Security</h4>
+            <p className="text-sm text-blue-800">
+              We take your privacy seriously. Please review and consent to how we'll use your information to provide loan recommendations and services.
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Required Data Processing Consent */}
+            <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  checked={privacyConsent.dataProcessing}
+                  onChange={() => handleConsentChange('dataProcessing')}
+                  className="mt-1 w-4 h-4 text-blue-600 border-red-300 rounded focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-red-900">
+                    ✅ Required: Data Processing Consent
+                  </span>
+                  <p className="text-xs text-red-700 mt-1">
+                    I consent to the processing of my business information to assess loan eligibility and provide personalized recommendations. This includes basic business details, revenue information, and contact details.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* Visa Lookup Consent */}
+            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  checked={privacyConsent.visaLookup}
+                  onChange={() => handleConsentChange('visaLookup')}
+                  className="mt-1 w-4 h-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-blue-900">
+                    💳 Optional: Visa Merchant Data Lookup
+                  </span>
+                  <p className="text-xs text-blue-700 mt-1">
+                    I consent to checking my business against Visa's merchant database to potentially unlock better loan terms and lower interest rates.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* Alternative Data Consent */}
+            <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  checked={privacyConsent.alternativeData}
+                  onChange={() => handleConsentChange('alternativeData')}
+                  className="mt-1 w-4 h-4 text-purple-600 border-purple-300 rounded focus:ring-purple-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-purple-900">
+                    📊 Optional: Alternative Data Collection
+                  </span>
+                  <p className="text-xs text-purple-700 mt-1">
+                    I consent to the use of alternative data sources (social media, mobile money, community references) to enhance my credit profile and improve loan approval chances.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* Data Sharing Consent */}
+            <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  checked={privacyConsent.dataSharing}
+                  onChange={() => handleConsentChange('dataSharing')}
+                  className="mt-1 w-4 h-4 text-green-600 border-green-300 rounded focus:ring-green-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-green-900">
+                    🤝 Optional: Verified Lender Sharing
+                  </span>
+                  <p className="text-xs text-green-700 mt-1">
+                    I consent to sharing my information with verified partner lenders to receive actual loan offers. Data is only shared with pre-approved, legitimate financial institutions.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-2">🛡️ Your Rights</h4>
+            <ul className="text-xs text-gray-700 space-y-1">
+              <li>• You can withdraw consent at any time</li>
+              <li>• You have the right to access, correct, or delete your data</li>
+              <li>• We use industry-standard encryption to protect your information</li>
+              <li>• Data is never sold to third parties for marketing purposes</li>
+              <li>• You can request a copy of all data we have about you</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="flex space-x-3">
+          <button
+            onClick={handlePrivacySubmit}
+            disabled={!privacyConsent.dataProcessing}
+            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+              privacyConsent.dataProcessing
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {privacyConsent.dataProcessing ? 'Continue with Loan Application' : 'Required Consent Missing'}
+          </button>
+          <button
+            onClick={() => setShowPrivacyModal(false)}
+            className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   const VisaLookupCard = () => (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 shadow-sm">
@@ -258,139 +583,6 @@ export default function BusinessProfile() {
       )}
     </div>
   );
-
-  const AlternativeDataSection = () => (
-    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-purple-800">
-            {visaLookupStatus === 'found' ? 'Boost Your Profile Even Further' : 'Alternative Data Sources'}
-          </h2>
-        </div>
-        {visaLookupStatus === 'found' && (
-          <div className="bg-purple-100 px-3 py-1 rounded-full">
-            <span className="text-xs font-medium text-purple-700">💪 Extra Strength</span>
-          </div>
-        )}
-      </div>
-      
-      <p className="text-purple-700 mb-6">
-        {visaLookupStatus === 'found' 
-          ? 'Your Visa data is excellent! Adding these data sources can make your profile even stronger and potentially unlock additional benefits.'
-          : 'Help us understand your business better by providing information about these data sources:'
-        }
-      </p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Input
-          label="Mobile Money Phone Number"
-          name="mobileMoneyPhone"
-          value={formData.mobileMoneyPhone}
-          onChange={handleChange}
-          placeholder="+502 1234 5678"
-        />
-        
-        <Input
-          label="Business WhatsApp Number"
-          name="whatsappBusiness"
-          value={formData.whatsappBusiness}
-          onChange={handleChange}
-          placeholder="+502 1234 5678"
-        />
-        
-        <Input
-          label="Facebook Business Page"
-          name="facebookPage"
-          value={formData.facebookPage}
-          onChange={handleChange}
-          placeholder="facebook.com/yourbusiness"
-        />
-        
-        <Input
-          label="Instagram Business Account"
-          name="instagramAccount"
-          value={formData.instagramAccount}
-          onChange={handleChange}
-          placeholder="@yourbusiness"
-        />
-      </div>
-
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-purple-700 mb-2">
-          Community References
-        </label>
-        <textarea
-          name="communityReferences"
-          value={formData.communityReferences}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          rows="3"
-          placeholder="Who can vouch for your business? (suppliers, customers, business associations...)"
-        />
-      </div>
-
-      <div className={`rounded-lg p-4 ${visaLookupStatus === 'found' ? 'bg-green-100' : 'bg-purple-100'}`}>
-        <h4 className={`font-semibold mb-3 ${visaLookupStatus === 'found' ? 'text-green-800' : 'text-purple-800'}`}>
-          {visaLookupStatus === 'found' ? 'Additional Benefits:' : 'Why This Information Helps:'}
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {visaLookupStatus === 'found' ? (
-            <>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-sm text-green-700">Even higher credit score boost (+10-20 pts)</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-sm text-green-700">Priority processing for loans</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-sm text-green-700">Access to premium loan products</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-sm text-green-700">Lower documentation requirements</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                <span className="text-sm text-purple-700">Mobile money shows payment consistency</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                <span className="text-sm text-purple-700">Social media demonstrates engagement</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                <span className="text-sm text-purple-700">References build trust and credibility</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                <span className="text-sm text-purple-700">Complete picture improves approval odds</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {visaLookupStatus === 'found' && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-700">
-            💡 <strong>Pro Tip:</strong> Businesses with both Visa data and alternative data sources typically see 
-            approval rates 25% higher than those with Visa data alone.
-          </p>
-        </div>
-      )}
-    </div>
-  );
   
   return (
     <div className="bg-gray-50 min-h-screen py-8">
@@ -466,49 +658,60 @@ export default function BusinessProfile() {
                 />
               </div>
 
-              {/* Visa Integration Section - Always visible now */}
+              {/* Visa Integration Section */}
               <FadeTransition delay={0.3}>
                 <VisaLookupCard />
               </FadeTransition>
 
-              {/* Alternative Data Section - Always show after Visa lookup OR manually triggered */}
+              {/* Alternative Data Section */}
               {(showAlternativeData || visaLookupStatus !== 'not-started') && (
                 <FadeTransition delay={0.5}>
-                  <AlternativeDataSection />
+                  <AlternativeDataSection 
+                    formData={formData}
+                    handleChange={handleChange}
+                    visaLookupStatus={visaLookupStatus}
+                  />
                 </FadeTransition>
               )}
 
-              {/* Manual trigger for alternative data when Visa hasn't been checked yet */}
+              {/* Manual trigger for alternative data */}
               {!showAlternativeData && visaLookupStatus === 'not-started' && isFormReady && (
                 <FadeTransition delay={0.4}>
                   <div className="text-center">
                     <p className="text-gray-600 mb-4">
                       Want to skip the Visa check and provide alternative data instead?
                     </p>
-                    <Button
+                    <button
                       type="button"
-                      onClick={() => setShowAlternativeData(true)}
-                      variant="secondary"
-                      className="bg-purple-600 text-white hover:bg-purple-700"
+                      onClick={handleShowAlternativeData}
+                      className="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-200"
                     >
                       Add Alternative Data Sources
-                    </Button>
+                    </button>
                   </div>
                 </FadeTransition>
               )}
               
               <div className="flex justify-end pt-6 border-t border-gray-200">
-                <Button
-                  type="submit"
-                  className="px-8 py-3 bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Continue to Loan Options →
-                </Button>
+                <div className="text-center">
+                  <Button
+                    type="submit"
+                    className="px-8 py-3 bg-blue-600 text-white hover:bg-blue-700"
+                  >
+                    Continue to Loan Options →
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-2">
+                    By continuing, you'll be asked to review our data protection policy
+                  </p>
+                </div>
               </div>
             </form>
           </div>
         </FadeTransition>
       </div>
+      
+      {/* Privacy Consent Modal */}
+      {showPrivacyModal && <PrivacyConsentModal />}
     </div>
   );
 }

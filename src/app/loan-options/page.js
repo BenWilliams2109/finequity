@@ -1,4 +1,4 @@
-// src/app/loan-options/page.js - Fixed useEffect version
+// src/app/loan-options/page.js - Improved mobile formatting with clearer loan details
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -265,7 +265,7 @@ export default function LoanOptions() {
           </FadeTransition>
         )}
         
-        {/* Mobile-Optimized Loan Cards */}
+        {/* Enhanced Mobile-Optimized Loan Cards */}
         <FadeTransition delay={0.4}>
           <div className="space-y-4">
             {getEnhancedLoanProducts().map((loan, index) => (
@@ -277,38 +277,56 @@ export default function LoanOptions() {
                     </div>
                   )}
                   
-                  {/* Header */}
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">{loan.name}</h3>
-                      <div className="text-sm text-gray-600">{loan.amount} • {loan.term}</div>
+                  {/* Header with Loan Name */}
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">{loan.name}</h3>
+                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      loan.approvalProbability >= 0.8 ? 'bg-green-100 text-green-800' : 
+                      loan.approvalProbability >= 0.6 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {Math.round(loan.approvalProbability * 100)}% approval chance
                     </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-bold ${
-                        loan.approvalProbability >= 0.8 ? 'text-green-600' : 
-                        loan.approvalProbability >= 0.6 ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {Math.round(loan.approvalProbability * 100)}% approval
+                  </div>
+                  
+                  {/* Key Loan Details - Prominently Displayed */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                    <div className="grid grid-cols-1 gap-3">
+                      {/* Loan Amount */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600">💰 Loan Amount:</span>
+                        <span className="text-lg font-bold text-gray-900">{loan.amount}</span>
+                      </div>
+                      
+                      {/* Loan Term */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600">⏰ Loan Term:</span>
+                        <span className="text-lg font-bold text-gray-900">{loan.term}</span>
+                      </div>
+                      
+                      {/* Interest Rate */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600">📊 Interest Rate:</span>
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-gray-900">{loan.interestRate}</span>
+                          {loan.visaDiscount && (
+                            <div className="text-xs text-blue-600 font-medium">(-3% Visa discount)</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Interest Rate */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-gray-600">Interest Rate:</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold">{loan.interestRate}</span>
-                      {loan.visaDiscount && (
-                        <span className="text-blue-600 text-xs">(-3%)</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Progress Bar */}
+                  {/* Progress Bar for Approval Probability */}
                   <div className="mb-4">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600">Approval Likelihood</span>
+                      <span className="text-sm font-medium text-gray-900">
+                        {Math.round(loan.approvalProbability * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
                       <div 
-                        className={`h-2 rounded-full ${
+                        className={`h-3 rounded-full transition-all duration-300 ${
                           loan.approvalProbability >= 0.8 ? 'bg-green-500' : 
                           loan.approvalProbability >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
                         }`}
@@ -318,20 +336,23 @@ export default function LoanOptions() {
                   </div>
                   
                   {/* Description */}
-                  <p className="text-sm text-gray-700 mb-4">{loan.description}</p>
+                  <p className="text-sm text-gray-700 mb-4 leading-relaxed">{loan.description}</p>
                   
                   {/* Collapsible Details */}
                   <details className="mb-4">
-                    <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
-                      View Requirements & Data Sources
+                    <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900 flex items-center">
+                      <span>View Requirements & Data Sources</span>
+                      <svg className="w-4 h-4 ml-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </summary>
-                    <div className="mt-2 space-y-2">
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-3">
                       <div>
-                        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Requirements:</h4>
-                        <ul className="text-xs text-gray-600 mt-1">
+                        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Requirements:</h4>
+                        <ul className="text-sm text-gray-700">
                           {loan.requirements && loan.requirements.slice(0, 3).map((req, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="text-gray-400 mr-1">•</span>
+                            <li key={i} className="flex items-start mb-1">
+                              <span className="text-blue-500 mr-2 mt-1">•</span>
                               <span>{req}</span>
                             </li>
                           ))}
@@ -339,17 +360,17 @@ export default function LoanOptions() {
                       </div>
                       
                       <div>
-                        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Data Sources:</h4>
-                        <ul className="text-xs text-gray-600 mt-1">
+                        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Data Sources:</h4>
+                        <ul className="text-sm text-gray-700">
                           {userData.businessInfo.hasVisaMerchant && (
-                            <li className="flex items-start">
-                              <span className="text-blue-500 mr-1">•</span>
-                              <span className="text-blue-600 font-medium">Visa Transaction History ✓</span>
+                            <li className="flex items-start mb-1">
+                              <span className="text-green-500 mr-2 mt-1">✓</span>
+                              <span className="text-blue-600 font-medium">Visa Transaction History</span>
                             </li>
                           )}
                           {loan.alternativeDataUsed && loan.alternativeDataUsed.slice(0, 2).map((data, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="text-gray-400 mr-1">•</span>
+                            <li key={i} className="flex items-start mb-1">
+                              <span className="text-blue-500 mr-2 mt-1">•</span>
                               <span>{data}</span>
                             </li>
                           ))}
@@ -361,7 +382,7 @@ export default function LoanOptions() {
                   {/* Action Button */}
                   <Button
                     onClick={() => handleSelectLoan(loan)}
-                    className="w-full"
+                    className="w-full text-lg py-3 font-semibold"
                   >
                     Select This Loan
                   </Button>

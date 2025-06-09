@@ -1,14 +1,13 @@
-// src/app/improvement-plan/page.js - Fixed useEffect version
+// src/app/improvement-plan/page.js - Overhauled with better predictions and fixed button
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import FadeTransition from '../../components/ui/FadeTransition';
 import Button from '../../components/ui/Button';
 import { useUserData } from '../../context/UserDataContext';
 import { recommendAlternativeData } from '../../lib/loan-products';
-import MLPredictionsDashboard from '../../components/ml/MLPredictionsDashboard';
-import ESGAssessment from '../../components/sustainability/ESGAssessment';
 
 export default function ImprovementPlan() {
   const router = useRouter();
@@ -31,11 +30,12 @@ export default function ImprovementPlan() {
       setImprovementPlan(recommendations);
     }
 
-    // Generate ML predictions - moved inside useEffect
+    // Generate comprehensive ML predictions
     const generateMLPredictions = () => {
       setTimeout(() => {
         const currentScore = userData.selectedLoan?.riskAssessment?.overallScore || 650;
         const hasVisa = userData.businessInfo.hasVisaMerchant;
+        const currentRevenue = parseInt(userData.businessInfo.monthlyRevenue || '0') || 1000;
         
         setMLPredictions({
           currentScore: currentScore,
@@ -44,46 +44,77 @@ export default function ImprovementPlan() {
             '6months': currentScore + (hasVisa ? 45 : 65),
             '12months': currentScore + (hasVisa ? 70 : 95)
           },
-          loanSuccessProbability: 0.78 + (hasVisa ? 0.15 : 0.08),
+          loanSuccessProbability: {
+            current: userData.selectedLoan?.approvalProbability || 0.65,
+            '3months': Math.min((userData.selectedLoan?.approvalProbability || 0.65) + 0.15, 0.95),
+            '6months': Math.min((userData.selectedLoan?.approvalProbability || 0.65) + 0.25, 0.98),
+            '12months': Math.min((userData.selectedLoan?.approvalProbability || 0.65) + 0.30, 0.99)
+          },
           recommendedActions: [
             {
               action: hasVisa ? "Maintain consistent Visa transaction volume" : "Apply for Visa merchant account",
               impact: hasVisa ? 15 : 45,
               timeframe: hasVisa ? "Ongoing" : "2-3 weeks",
-              priority: "High"
+              priority: "High",
+              completed: false
             },
             {
               action: "Establish social media business presence",
               impact: 20,
               timeframe: "1-2 weeks", 
-              priority: userData.businessInfo.facebookPage ? "Low" : "Medium"
+              priority: userData.businessInfo.facebookPage ? "Low" : "Medium",
+              completed: !!userData.businessInfo.facebookPage
             },
             {
               action: "Collect customer testimonials and reviews",
               impact: 15,
               timeframe: "2-4 weeks",
-              priority: "Medium"
+              priority: "Medium",
+              completed: false
             },
             {
               action: "Document supplier relationships",
               impact: 10,
               timeframe: "1 week",
-              priority: "Low"
+              priority: "Low",
+              completed: false
             }
           ],
           businessGrowthProjection: {
-            currentRevenue: parseInt(userData.businessInfo.monthlyRevenue || '0') || 0,
+            currentRevenue: currentRevenue,
             projectedRevenue: {
-              '6months': (parseInt(userData.businessInfo.monthlyRevenue || '0') || 0) * 1.3,
-              '12months': (parseInt(userData.businessInfo.monthlyRevenue || '0') || 0) * 1.6,
-              '24months': (parseInt(userData.businessInfo.monthlyRevenue || '0') || 0) * 2.1
-            }
+              '3months': Math.round(currentRevenue * 1.15),
+              '6months': Math.round(currentRevenue * 1.3),
+              '12months': Math.round(currentRevenue * 1.6),
+              '24months': Math.round(currentRevenue * 2.1)
+            },
+            factors: [
+              { name: "Visa Payment Integration", impact: "+15-20% revenue" },
+              { name: "Digital Marketing Presence", impact: "+10-15% customer reach" },
+              { name: "Customer Reviews & Trust", impact: "+8-12% conversion rate" },
+              { name: "Improved Credit Terms", impact: "+5-10% working capital" }
+            ]
+          },
+          marketInsights: {
+            industryGrowth: userData.businessInfo.industry === 'Food' ? 8.5 : 
+                           userData.businessInfo.industry === 'Technology' ? 12.3 :
+                           userData.businessInfo.industry === 'Retail' ? 6.2 : 7.8,
+            localMarketTrends: [
+              "Digital payment adoption increased 35% in your region",
+              "Small business lending approval rates improved 12% this quarter",
+              "Social commerce driving 25% more customer discovery"
+            ],
+            competitiveAdvantages: [
+              hasVisa ? "Payment flexibility gives edge over cash-only competitors" : "Digital payment capability would differentiate from competitors",
+              "Strong community ties provide customer loyalty advantage",
+              "Growing market demand for " + (userData.businessInfo.industry || "your services").toLowerCase()
+            ]
           }
         });
       }, 1000);
     };
 
-    // Generate ESG Score - moved inside useEffect
+    // Generate ESG Score
     const generateESGScore = () => {
       setTimeout(() => {
         const industryESGScores = {
@@ -99,7 +130,6 @@ export default function ImprovementPlan() {
         const baseScores = industryESGScores[userData.businessInfo.industry] || 
                           { environmental: 70, social: 75, governance: 70 };
         
-        // Adjust based on available data
         if (userData.businessInfo.communityReferences) {
           baseScores.social += 10;
           baseScores.governance += 5;
@@ -129,21 +159,15 @@ export default function ImprovementPlan() {
               impact: "Improve operational efficiency",
               creditBenefit: "+12 credit score points"
             }
-          ],
-          certificationOpportunities: [
-            "Fair Trade Certification",
-            "Women-Owned Business Certification", 
-            "Local Sustainability Recognition"
           ]
         });
       }, 1200);
     };
 
-    // Call the functions
     generateMLPredictions();
     generateESGScore();
     
-  }, [userData, setImprovementPlan, router]); // All dependencies included
+  }, [userData, setImprovementPlan, router]);
 
   const toggleTaskComplete = (index) => {
     const newCompleted = new Set(completedTasks);
@@ -222,6 +246,411 @@ export default function ImprovementPlan() {
       </div>
     </div>
   );
+
+  // AI Predictions Dashboard Component
+  const AIPredictionsDashboard = () => {
+    if (!mlPredictions) {
+      return (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading AI predictions...</p>
+        </div>
+      );
+    }
+
+    // Prepare chart data for Recharts
+    const creditScoreChartData = [
+      { period: 'Current', score: mlPredictions.currentScore, label: 'Now' },
+      { period: '3 Months', score: mlPredictions.projectedScore['3months'], label: '3M' },
+      { period: '6 Months', score: mlPredictions.projectedScore['6months'], label: '6M' },
+      { period: '12 Months', score: mlPredictions.projectedScore['12months'], label: '12M' }
+    ];
+
+    const approvalChartData = [
+      { 
+        period: 'Current', 
+        approval: Math.round(mlPredictions.loanSuccessProbability.current * 100),
+        label: 'Now'
+      },
+      { 
+        period: '3 Months', 
+        approval: Math.round(mlPredictions.loanSuccessProbability['3months'] * 100),
+        label: '3M'
+      },
+      { 
+        period: '6 Months', 
+        approval: Math.round(mlPredictions.loanSuccessProbability['6months'] * 100),
+        label: '6M'
+      },
+      { 
+        period: '12 Months', 
+        approval: Math.round(mlPredictions.loanSuccessProbability['12months'] * 100),
+        label: '12M'
+      }
+    ];
+
+    const revenueChartData = [
+      { 
+        period: 'Current', 
+        revenue: mlPredictions.businessGrowthProjection.currentRevenue,
+        label: 'Now'
+      },
+      { 
+        period: '3 Months', 
+        revenue: mlPredictions.businessGrowthProjection.projectedRevenue['3months'],
+        label: '3M'
+      },
+      { 
+        period: '6 Months', 
+        revenue: mlPredictions.businessGrowthProjection.projectedRevenue['6months'],
+        label: '6M'
+      },
+      { 
+        period: '12 Months', 
+        revenue: mlPredictions.businessGrowthProjection.projectedRevenue['12months'],
+        label: '12M'
+      }
+    ];
+
+    // Custom tooltip components
+    const CreditScoreTooltip = ({ active, payload, label }) => {
+      if (active && payload && payload.length) {
+        return (
+          <div className="bg-white p-3 border border-blue-200 rounded-lg shadow-lg">
+            <p className="font-medium text-blue-900">{label}</p>
+            <p className="text-blue-700">
+              Credit Score: <span className="font-bold">{payload[0].value}</span>
+            </p>
+          </div>
+        );
+      }
+      return null;
+    };
+
+    const ApprovalTooltip = ({ active, payload, label }) => {
+      if (active && payload && payload.length) {
+        return (
+          <div className="bg-white p-3 border border-green-200 rounded-lg shadow-lg">
+            <p className="font-medium text-green-900">{label}</p>
+            <p className="text-green-700">
+              Approval Rate: <span className="font-bold">{payload[0].value}%</span>
+            </p>
+          </div>
+        );
+      }
+      return null;
+    };
+
+    const RevenueTooltip = ({ active, payload, label }) => {
+      if (active && payload && payload.length) {
+        return (
+          <div className="bg-white p-3 border border-purple-200 rounded-lg shadow-lg">
+            <p className="font-medium text-purple-900">{label}</p>
+            <p className="text-purple-700">
+              Revenue: <span className="font-bold">${payload[0].value.toLocaleString()}</span>
+            </p>
+          </div>
+        );
+      }
+      return null;
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* Credit Score Projection */}
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            📊 Credit Score Projection
+          </h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* Chart */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-900 mb-3">Score Progression</h4>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={creditScoreChartData}>
+                    <XAxis 
+                      dataKey="label" 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#1e40af' }}
+                    />
+                    <YAxis hide />
+                    <Tooltip content={<CreditScoreTooltip />} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="score" 
+                      stroke="#1D4ED8" 
+                      strokeWidth={3}
+                      dot={{ fill: '#1D4ED8', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#1D4ED8' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {/* Data Points */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-600">Current</div>
+                <div className="text-2xl font-bold text-gray-900">{mlPredictions.currentScore}</div>
+              </div>
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-sm text-blue-600">3 Months</div>
+                <div className="text-xl font-bold text-blue-700">{mlPredictions.projectedScore['3months']}</div>
+                <div className="text-xs text-green-600">+{mlPredictions.projectedScore['3months'] - mlPredictions.currentScore}</div>
+              </div>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="text-sm text-green-600">6 Months</div>
+                <div className="text-xl font-bold text-green-700">{mlPredictions.projectedScore['6months']}</div>
+                <div className="text-xs text-green-600">+{mlPredictions.projectedScore['6months'] - mlPredictions.currentScore}</div>
+              </div>
+              <div className="text-center p-3 bg-purple-50 rounded-lg">
+                <div className="text-sm text-purple-600">12 Months</div>
+                <div className="text-xl font-bold text-purple-700">{mlPredictions.projectedScore['12months']}</div>
+                <div className="text-xs text-green-600">+{mlPredictions.projectedScore['12months'] - mlPredictions.currentScore}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-medium text-blue-900 mb-2">🎯 Key Insights</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Following our plan could improve your score by up to {mlPredictions.projectedScore['12months'] - mlPredictions.currentScore} points</li>
+              <li>• You're currently in the {mlPredictions.currentScore >= 720 ? 'excellent' : mlPredictions.currentScore >= 650 ? 'good' : 'fair'} credit range</li>
+              <li>• Target score of 720+ unlocks premium loan rates</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Loan Approval Probability */}
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            🎯 Loan Approval Probability
+          </h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* Chart */}
+            <div className="bg-green-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-green-900 mb-3">Approval Progression</h4>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={approvalChartData}>
+                    <XAxis 
+                      dataKey="label" 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#059669' }}
+                    />
+                    <YAxis hide />
+                    <Tooltip content={<ApprovalTooltip />} />
+                    <Bar 
+                      dataKey="approval" 
+                      fill="#059669" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {/* Data Points */}
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(mlPredictions.loanSuccessProbability).map(([period, probability]) => (
+                <div key={period} className="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
+                  <div className="text-sm text-gray-600 capitalize">
+                    {period === 'current' ? 'Current' : period.replace('months', 'M')}
+                  </div>
+                  <div className="text-xl font-bold text-green-700">
+                    {Math.round(probability * 100)}%
+                  </div>
+                  {period !== 'current' && (
+                    <div className="text-xs text-green-600">
+                      +{Math.round((probability - mlPredictions.loanSuccessProbability.current) * 100)}%
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="bg-green-50 rounded-lg p-4">
+            <h4 className="font-medium text-green-900 mb-2">💡 What This Means</h4>
+            <ul className="text-sm text-green-800 space-y-1">
+              <li>• Your approval chances increase significantly with each completed action</li>
+              <li>• 90%+ approval probability typically unlocks better interest rates</li>
+              <li>• Multiple data sources strengthen your application credibility</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Revenue Growth Projection */}
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            💰 Revenue Growth Projection
+          </h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* Chart */}
+            <div className="bg-purple-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-purple-900 mb-3">Revenue Growth</h4>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={revenueChartData}>
+                    <XAxis 
+                      dataKey="label" 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#7C3AED' }}
+                    />
+                    <YAxis hide />
+                    <Tooltip content={<RevenueTooltip />} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#7C3AED" 
+                      strokeWidth={3}
+                      dot={{ fill: '#7C3AED', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#7C3AED' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {/* Data Points */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-600">Current</div>
+                <div className="text-lg font-bold text-gray-900">
+                  ${mlPredictions.businessGrowthProjection.currentRevenue.toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500">per month</div>
+              </div>
+              {Object.entries(mlPredictions.businessGrowthProjection.projectedRevenue).slice(0, 3).map(([period, revenue]) => (
+                <div key={period} className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
+                  <div className="text-sm text-purple-600 capitalize">
+                    {period.replace('months', 'M')}
+                  </div>
+                  <div className="text-lg font-bold text-purple-700">
+                    ${revenue.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-green-600">
+                    +{Math.round(((revenue - mlPredictions.businessGrowthProjection.currentRevenue) / mlPredictions.businessGrowthProjection.currentRevenue) * 100)}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <h4 className="font-medium text-gray-900">Growth Factors:</h4>
+            {mlPredictions.businessGrowthProjection.factors.map((factor, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <span className="text-sm font-medium text-purple-900">{factor.name}</span>
+                <span className="text-sm text-purple-700">{factor.impact}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Market Insights */}
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            📈 Market Insights & Trends
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">📊 Industry Growth Rate</h4>
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                +{mlPredictions.marketInsights.industryGrowth}%
+              </div>
+              <p className="text-sm text-gray-600">Annual growth in your industry</p>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">🎯 Local Market Trends</h4>
+              <ul className="space-y-2">
+                {mlPredictions.marketInsights.localMarketTrends.map((trend, index) => (
+                  <li key={index} className="text-sm text-gray-700 flex items-start">
+                    <span className="text-green-500 mr-2 mt-1">•</span>
+                    {trend}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
+            <h4 className="font-medium text-yellow-900 mb-2">🏆 Your Competitive Advantages</h4>
+            <ul className="space-y-1">
+              {mlPredictions.marketInsights.competitiveAdvantages.map((advantage, index) => (
+                <li key={index} className="text-sm text-yellow-800 flex items-start">
+                  <span className="text-yellow-600 mr-2 mt-1">✓</span>
+                  {advantage}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ESG Component
+  const ESGDashboard = () => {
+    if (!esgScore) {
+      return (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Calculating ESG score...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">🌱 ESG Assessment</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-700">{esgScore.overall}</div>
+              <div className="text-sm text-green-600">Overall ESG Score</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-xl font-bold text-blue-700">{esgScore.breakdown.environmental}</div>
+              <div className="text-sm text-blue-600">Environmental</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-xl font-bold text-purple-700">{esgScore.breakdown.social}</div>
+              <div className="text-sm text-purple-600">Social</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-xl font-bold text-orange-700">{esgScore.breakdown.governance}</div>
+              <div className="text-sm text-orange-600">Governance</div>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {esgScore.recommendations.map((rec, index) => (
+              <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">{rec.category}</h4>
+                <p className="text-sm text-gray-700 mb-2">{rec.suggestion}</p>
+                <div className="flex justify-between text-xs">
+                  <span className="text-green-600">{rec.impact}</span>
+                  <span className="text-blue-600">{rec.creditBenefit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
   
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -239,7 +668,7 @@ export default function ImprovementPlan() {
         <div className="flex overflow-x-auto space-x-1 bg-gray-100 rounded-lg p-1 mb-6">
           {[
             { id: 'plan', label: 'Action Plan', icon: '✅' },
-            { id: 'predictions', label: 'Predictions', icon: '📊' },
+            { id: 'predictions', label: 'AI Predictions', icon: '🤖' },
             { id: 'sustainability', label: 'ESG Score', icon: '🌱' }
           ].map((tab) => (
             <button
@@ -260,7 +689,7 @@ export default function ImprovementPlan() {
         {/* Tab Content */}
         {activeTab === 'plan' && (
           <div className="space-y-6">
-            {/* Selected Loan Summary - Simplified */}
+            {/* Selected Loan Summary */}
             <FadeTransition>
               <div className="bg-white rounded-xl p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -309,7 +738,7 @@ export default function ImprovementPlan() {
               </div>
             </FadeTransition>
                 
-            {/* Action Items - Simplified */}
+            {/* Action Items */}
             <FadeTransition delay={0.2}>
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Action Items</h2>
@@ -325,19 +754,19 @@ export default function ImprovementPlan() {
               </div>
             </FadeTransition>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - FIXED BUTTON */}
             <FadeTransition delay={0.3}>
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-4 text-white">
                 <h3 className="font-semibold mb-2">Need Help Getting Started?</h3>
                 <p className="text-blue-100 text-sm mb-4">
                   Our AI assistant can guide you through each step and answer questions.
                 </p>
-                <Button
+                <button
                   onClick={handleChatClick}
-                  className="bg-white text-blue-600 hover:bg-gray-100 w-full sm:w-auto"
+                  className="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-gray-100 rounded-lg font-medium transition-colors duration-200 w-full sm:w-auto justify-center"
                 >
                   💬 Get Help from AI Assistant
-                </Button>
+                </button>
               </div>
             </FadeTransition>
           </div>
@@ -345,39 +774,25 @@ export default function ImprovementPlan() {
 
         {activeTab === 'predictions' && (
           <FadeTransition>
-            {mlPredictions ? (
-              <MLPredictionsDashboard predictions={mlPredictions} businessInfo={userData.businessInfo} />
-            ) : (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading predictions...</p>
-              </div>
-            )}
+            <AIPredictionsDashboard />
           </FadeTransition>
         )}
 
         {activeTab === 'sustainability' && (
           <FadeTransition>
-            {esgScore ? (
-              <ESGAssessment esgData={esgScore} businessInfo={userData.businessInfo} />
-            ) : (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-600 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-gray-600">Calculating ESG score...</p>
-              </div>
-            )}
+            <ESGDashboard />
           </FadeTransition>
         )}
 
         {/* Bottom Navigation - Mobile Friendly */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 sm:hidden">
           <div className="max-w-sm mx-auto">
-            <Button
+            <button
               onClick={handleChatClick}
-              className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              className="w-full bg-blue-600 text-white hover:bg-blue-700 py-3 px-4 rounded-lg font-medium transition-colors duration-200"
             >
               💬 Need Help? Chat with AI
-            </Button>
+            </button>
           </div>
         </div>
 
